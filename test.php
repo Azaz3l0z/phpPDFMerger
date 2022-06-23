@@ -1,15 +1,9 @@
 <?php
     require("phpToPDF.php");
-    // Imagenes
-    $imgs = glob('./tests/img*');
 
-    // Fusiona todas las imagenes (soporta jpeg, jpg, png y webp) 
-    // de la carpeta tests y los guarda en fusionadoIMG.pdf
-    fusionaIMG($imgs, "./tests/fusionadoIMG.pdf", FALSE);
-
-    // Todos los pdfs de la carpeta tests
+    // Todos los archivos de la carpeta tests
     $pdfs = glob('./tests/*.pdf');
-    fusionaPDF($pdfs, "./tests/fusionado.pdf"); 
+    fusionaPDF($files, "./tests/fusionado.pdf", FALSE); 
     
     // Disolvemos el pdf fusionado.pdf
     $pdf = "./tests/fusionado.pdf";

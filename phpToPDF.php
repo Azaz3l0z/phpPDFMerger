@@ -19,7 +19,7 @@
     // EJEMPLOS
     // $files = glob('./*.pdf');
 
-    function fusionaPDF($files, $output_file){
+    function fusionaPDF($files, $output_file, $deleteWebp = TRUE){
         // La funcion fusionaPDF recibe:
         // $files: Un array con el path a los archivos PDF que se desean
         //         fusionar.
@@ -50,76 +50,57 @@
             $converter = new GhostscriptConverter($command, $filesystem);
             
             foreach ($files as $file){
-                if ($guesser->guess($file)!=1.4){
-                    $converter->convert($file, '1.4');
+                if (str_contains($file, ".pdf")){
+                    if ($guesser->guess($file)!=1.4){
+                        $converter->convert($file, '1.4');
+                    }
                 }
             }
-            
             // Creamos el objeto PDF
             $pdf = new \setasign\Fpdi\Fpdi();
-    
-            foreach ($files as $file) {
-                $pageCount = $pdf->setSourceFile($file);
-                for ($i = 0; $i < $pageCount; $i++) {
-                    $tpl = $pdf->importPage($i + 1, '/MediaBox');
-                    $size = $pdf->getTemplateSize($tpl);
-                    $orientation = ($size['height'] > $size['width']) ? 'P' : 'L';
-    
-                    if ($orientation == "P") {
-                        $pdf->addPage($orientation, array($size['width'], $size['height']));
-                      } else {
-                        $pdf->addPage($orientation, array($size['height'], $size['width']));
-                      }
-                    $pdf->useTemplate($tpl);
-                }
-            }
-            $pdf->Output('F', $output_file);
-            echo "PDF creado";
-        } catch (Exception $e) {
-            echo "No se ha podio generar el PDF porque el/los archivo/s no existen.";
-        }
-    };
-
-    function fusionaIMG($files, $output_file, $deleteWebp = TRUE){
-        // Esta función toma como argumento el path de las imagenes a fusionar
-        // y el archivo PDF donde se guardarán-
-        // Además tenemos el argumento $deleteWebp, que lo que hará es:
-        // Si tenemos una imagen con el formato .webp, la transformará a .jpg
-        // y borrará la .webp
-        // En caso de que este argumento sea FALSE, no se borrará la imagen.
-        try {
-            $pdf = new fpdf();
             $pdf->SetAutoPageBreak(false, 0);
             $pdf->SetMargins(0, 0, 0);
             $pdf->SetAutoPageBreak(false, 0);
-
-            foreach ($files as $file){
-                if (!file_exists($file)){
-                    $files = array_diff($files, [$file]);
-                }
-            }
-            if ($files == []) {
-                throw new FileNotFound;
-            }
-            
-            foreach ($files as $file){
-                if (str_contains($file, ".webp")){
-                    $new_file = str_replace(".webp", ".jpg", $file);
-                    webp2jpg($file, $new_file);
-                    if ($deleteWebp){
-                        unlink($file);
-                    }
-                    $file = $new_file;
-                }
-                $img_info = getimagesize($file);
-                list($x, $y) = getimagesize($file);
-                $orientation = ($x > $y) ? 'L' : 'P';
-                $pdiSIZE = ($x > $y) ? 297 : 210;
+    
+            foreach ($files as $file) {
+                // Si es un pdf se añade distinto que si es una imagen
+                if (str_contains($file, ".pdf")){
+                    $pageCount = $pdf->setSourceFile($file);
+                    for ($i = 0; $i < $pageCount; $i++) {
+                        $tpl = $pdf->importPage($i + 1, '/MediaBox');
+                        $size = $pdf->getTemplateSize($tpl);
+                        $orientation = ($size['height'] > $size['width']) ? 'P' : 'L';
         
-                $pdf->AddPage($orientation);
-                $pdf->Image($file, 0, 0, $pdiSIZE);
+                        if ($orientation == "P") {
+                            $pdf->addPage($orientation, array($size['width'], $size['height']));
+                        } else {
+                            $pdf->addPage($orientation, array($size['height'], $size['width']));
+                        }
+                        $pdf->useTemplate($tpl);
+                    }
+                } else {  // Si es una imagen
+                    // Si es .webp se convierte a .jpg y se da la opcion de
+                    // borrar la imagen .webp
+                    if (str_contains($file, ".webp")){
+                        $new_file = str_replace(".webp", ".jpg", $file);
+                        webp2jpg($file, $new_file);
+                        if ($deleteWebp){
+                            unlink($file);
+                        }
+                        $file = $new_file;
+                    }
+                    $img_info = getimagesize($file);
+                    list($x, $y) = getimagesize($file);
+                    $orientation = ($x > $y) ? 'L' : 'P';
+                    $pdiSIZE = ($x > $y) ? 297 : 210;
+            
+                    $pdf->AddPage($orientation);
+                    $pdf->Image($file, 0, 0, $pdiSIZE);
+                } 
+                // Se añade la pagina
             }
-            $pdf->Output($output_file, 'F');
+            // Se guarda el PDF 
+            $pdf->Output('F', $output_file);
             echo "PDF creado";
         } catch (Exception $e) {
             echo "No se ha podio generar el PDF porque el/los archivo/s no existen.";
@@ -134,6 +115,8 @@
         // archivos.
         // El array interior indica que páginas se usarán para generar dicho
         // PDF (ver ejemplo)
+
+        // IMPORTANTE: Las paginas empiezan en 1, no en 0.
 
         // Comprobamos que el archivo existe
         try {
