@@ -1,0 +1,8 @@
+{
+    "require": {
+        "fheider/pdfmerger": "^1.1",
+        "setasign/fpdf": "^1.8",
+        "setasign/fpdi": "^2.3",
+        "xthiago/pdf-version-converter": "dev-master"
+    }
+}
